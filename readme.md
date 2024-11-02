@@ -5,7 +5,9 @@ Create Env
 ```
 > mkdir myproject
 > cd myproject
-> py -3 -m venv .venv
+> py -3 -m venv ~/Downloads/virtual-envs/LawGateWebApiV2
+
+py -3 -m venv .venv (orginally used)
 ```
 
 Activate env
@@ -18,6 +20,11 @@ Install Flask
 
 ```
 pip install Flask
+```
+
+```
+pip freeze > requirements.txt
+pip install -r requirements.txt
 ```
 
 
