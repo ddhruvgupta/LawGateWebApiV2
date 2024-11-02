@@ -5,7 +5,7 @@ Create Env
 ```
 > mkdir myproject
 > cd myproject
-> py -3 -m venv ~/Downloads/virtual-envs/LawGateWebApiV2
+> py -3 -m venv C:\Users\Dhruv-PC\Downloads\virtual-envs\LawGateWebApiV2
 
 py -3 -m venv .venv (orginally used)
 ```
@@ -13,7 +13,7 @@ py -3 -m venv .venv (orginally used)
 Activate env
 
 ```
-.venv\Scripts\activate
+C:\Users\Dhruv-PC\Downloads\virtual-envs\LawGateWebApiV2\.venv\Scripts\activate
 ```
 
 Install Flask
