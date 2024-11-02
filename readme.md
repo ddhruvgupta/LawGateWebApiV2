@@ -32,4 +32,9 @@ pip install -r requirements.txt
 
 => just choose the python interpreter in VSCode, set it up to use the venv that was setup above. 
 
+
+1. create virtual env in the downloads directory
+2. activate env
+3. install dependencies from `requirequirements.txt`
+
 TODO: Can we rename the virtual environment to something other than venv ?
