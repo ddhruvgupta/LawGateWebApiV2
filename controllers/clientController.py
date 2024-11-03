@@ -2,17 +2,20 @@
 deleting clients and getting client information'''
 
 import uuid
+import os
 from flask import Blueprint, request, jsonify
 from clients.databaseClient import DatabaseClient
 from clients.AzureBlobStorageClient import AzureBlobStorageClient
 from models.clientModel import ClientModel, Client
 import re
+from dotenv import load_dotenv
 
+load_dotenv()  # Load environment variables from .env file
 client_blueprint = Blueprint('client_blueprint', __name__)
 
 # Initialize database and storage clients
 cm = ClientModel(DatabaseClient())
-blob_connection_string = "DefaultEndpointsProtocol=https;AccountName=csg10032000b0467fa5;AccountKey=M1S5aSIHJlPjf+bpmEbSvt/7U2J70r3bzz0xFElrYmm0P8UqU94CzT6DCp+ppDSuWbg4kf0058Kn+AStabE/fw==;EndpointSuffix=core.windows.net"
+blob_connection_string = os.getenv("BLOB_CONNECTION_STRING")
 blob_client = AzureBlobStorageClient(blob_connection_string)
 
 @client_blueprint.route('/clients', methods=['POST'])
@@ -37,19 +40,17 @@ def create_client():
 
 @client_blueprint.route('/clients/<int:client_id>', methods=['GET'])
 def get_client(client_id):
-    
-    clnt = cm.read_client(client_id)
-    if clnt:
-        return jsonify(clnt), 200
+    client = cm.read_client(client_id)
+    if client:
+        return jsonify(client), 200
     else:
         return jsonify({'error': 'Client not found'}), 404
     
 @client_blueprint.route('/clients/', methods=['GET'])
 def get_all_client():
-    result = cm.fetch_all_clients()
-
-    if result:
-        return jsonify(result), 200
+    client = cm.fetch_all_clients()
+    if client:
+        return jsonify(client), 200
     else:
         return jsonify({'error': 'Client not found'}), 404
 
@@ -78,7 +79,6 @@ def delete_client(client_id):
     
 
 def validate_client_data(data):
-    pass
     #TODO validate data
     required_fields = ['client_name', 'client_email', 'client_phone']
     for field in required_fields:
