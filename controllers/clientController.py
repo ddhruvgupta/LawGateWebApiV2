@@ -80,20 +80,17 @@ def delete_client(client_id):
 def validate_client_data(data):
     pass
     #TODO validate data
-    if not data['client_name']:
-        return False
-    if not data['client_email']:
-        return False
+    required_fields = ['client_name', 'client_email', 'client_phone']
+    for field in required_fields:
+        if field not in data:
+            return False, f"Missing required field: {field}"
 
     email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
     if not re.match(email_regex, data['client_email']):
-        return False
+        return False, "Invalid email address"
     
-    if not data['client_phone']:
-        return False
-
     phone_regex = r'^(?:(?:\+|0{0,2})91(\s*[\-]\s*)?|[0]?)?[6-9]\d{9}$'
     if not re.match(phone_regex, data['client_phone']):
-        return False
+        return False, "Invalid phone number"
     
     return True
