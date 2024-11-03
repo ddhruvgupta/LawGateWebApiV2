@@ -1,10 +1,12 @@
 '''Client controller is responsible for adding new clients, updating client information, 
 deleting clients and getting client information'''
 
+import uuid
 from flask import Blueprint, request, jsonify
 from clients.databaseClient import DatabaseClient
 from clients.AzureBlobStorageClient import AzureBlobStorageClient
-from models.clientModel import ClientModel
+from models.clientModel import ClientModel, Client
+import re
 
 client_blueprint = Blueprint('client_blueprint', __name__)
 
@@ -15,11 +17,23 @@ blob_client = AzureBlobStorageClient(blob_connection_string)
 
 @client_blueprint.route('/clients', methods=['POST'])
 def create_client():
-    data = request.json
     #TODO validate data
-    client_id = cm.create_client(data)
-    blob_client.create_container(client_id)
-    return jsonify({'client_id': client_id}), 201
+    print(request.json)
+    blob_container_name = str(uuid.uuid4())
+
+    isContainerCreated = blob_client.create_container(blob_container_name)
+    if isContainerCreated:
+        client = Client()
+        client.populate(request.json)
+        client.blob_storage_container_name = blob_container_name
+        try:
+            data = cm.create_client(client)
+        except Exception as e:
+            blob_client.delete_container(blob_container_name)
+            return jsonify({'Error': "Unable to add Client"}), 501
+
+    
+    return jsonify({'client_id': data}), 201
 
 @client_blueprint.route('/clients/<int:client_id>', methods=['GET'])
 def get_client(client_id):
@@ -30,7 +44,7 @@ def get_client(client_id):
     else:
         return jsonify({'error': 'Client not found'}), 404
     
-# @client_blueprint.route('/clients/', methods=['GET'])
+@client_blueprint.route('/clients/', methods=['GET'])
 def get_all_client():
     result = cm.fetch_all_clients()
 
@@ -44,7 +58,7 @@ def update_client(client_id):
     data = request.json
     #TODO validate data
     if get_client(client_id):
-        updated = cm.update_client(client_id, data)
+        _ = cm.update_client(client_id, data)
         # TODO check if the client is updated
         return jsonify({'message': 'Client updated'}), 200
     else: 
@@ -61,3 +75,25 @@ def delete_client(client_id):
     if deleted:
         blob_client.delete_container(client_id)
         return jsonify({'message': 'Client deleted'}), 200
+    
+
+def validate_client_data(data):
+    pass
+    #TODO validate data
+    if not data['client_name']:
+        return False
+    if not data['client_email']:
+        return False
+
+    email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+    if not re.match(email_regex, data['client_email']):
+        return False
+    
+    if not data['client_phone']:
+        return False
+
+    phone_regex = r'^(?:(?:\+|0{0,2})91(\s*[\-]\s*)?|[0]?)?[6-9]\d{9}$'
+    if not re.match(phone_regex, data['client_phone']):
+        return False
+    
+    return True

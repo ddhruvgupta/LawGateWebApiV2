@@ -13,7 +13,7 @@ py -3 -m venv .venv (orginally used)
 Activate env
 
 ```
-C:\Users\Dhruv-PC\Downloads\virtual-envs\LawGateWebApiV2\.venv\Scripts\activate
+C:\Users\Dhruv-PC\Downloads\virtual-envs\LawGateWebApiV2\Scripts\activate
 ```
 
 Install Flask
@@ -38,3 +38,5 @@ pip install -r requirements.txt
 3. install dependencies from `requirequirements.txt`
 
 TODO: Can we rename the virtual environment to something other than venv ?
+
+`flask --app helloWorld.py run`

@@ -23,10 +23,21 @@ class AzureBlobStorageClient:
 
     def create_container(self, new_container_name):
         try:
-            new_container_client = self.blob_service_client.create_container(new_container_name)
+            self.blob_service_client.create_container(new_container_name)
             print(f"Container {new_container_name} created successfully.")
+            return True
         except Exception as e:
             print(f"Failed to create container {new_container_name}: {e}")
+            return False
+        
+    def delete_container(self, container_name):
+        try:
+            self.blob_service_client.delete_container(container_name)
+            print(f"Container {container_name} deleted successfully.")
+            return True
+        except Exception as e:
+            print(f"Failed to delete container {container_name}: {e}")
+            return False
 
 
 # Example usage:

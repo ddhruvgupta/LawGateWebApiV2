@@ -10,13 +10,19 @@ class Client:
         self.blob_storage_container_name = blob_storage_container_name
         self.created_at = created_at or datetime.utcnow()
     
-    def __init__(self, obj):
-        self.client_id = obj['client_id']
-        self.client_name = obj['client_name']
-        self.client_email = obj['client_email']
-        self.client_phone = obj['client_phone']
-        self.blob_storage_container_name = obj['blob_storage_container_name']
-        self.created_at = obj['created_at']
+    def populate(self, obj):
+        if obj.get('client_id'):
+            self.client_id = obj['client_id']
+        if obj.get('client_name'):
+            self.client_name = obj['client_name']
+        if obj.get('client_email'):
+            self.client_email = obj['client_email']
+        if obj.get('client_phone'):
+            self.client_phone = obj['client_phone']
+        if obj.get('blob_storage_container_name'):
+            self.blob_storage_container_name = obj['blob_storage_container_name']
+        if obj.get('created_at'):
+            self.created_at = obj['created_at']
 
     def __repr__(self):
         return f"Client(client_id={self.client_id}, client_name={self.client_name}, client_email={self.client_email}, client_phone={self.client_phone}, blob_storage_container_name={self.blob_storage_container_name}, created_at={self.created_at})"
@@ -43,8 +49,14 @@ class ClientModel:
         INSERT INTO Clients (client_name, client_email, client_phone, blob_storage_container_name)
         VALUES (%s, %s, %s, %s)
         """
+        print("params recieved:",client)
         params = (client.client_name, client.client_email, client.client_phone, client.blob_storage_container_name)
-        self.db_client.fetch_filtered(query, params)
+        try:
+            client_id = self.db_client.insert(query, params)
+            return client_id
+        except Exception as e:
+            print(f"Error: {e}")
+            return e
 
     def read_client(self, client_id):
         query = "SELECT * FROM Clients WHERE client_id = %s"
@@ -82,6 +94,15 @@ class ClientModel:
         query = "DELETE FROM Clients WHERE client_id = %s"
         params = (client_id,)
         self.db_client.fetch_filtered(query, params)
+
+    def check_client_exists(self, client_name):
+        query = "SELECT * FROM Clients WHERE client_name = %s"
+        params = (client_name,)
+        results = self.db_client.fetch_filtered(query, params)
+        if results:
+            return True
+        else:
+            return False
 
     def fetch_all_clients(self):
         query = "SELECT * FROM Clients"

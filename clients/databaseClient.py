@@ -51,16 +51,40 @@ class DatabaseClient:
         result = cursor.fetchall()
         cursor.close()
         return result
+        
+    def insert(self, query, params):
+        if self.connection is None:
+            print("Not connected to the database")
+            return None
+        cursor = self.connection.cursor()
+        try:
+            cursor.execute(query, params)
+            self.connection.commit()
+            print("Insert successful")
+            print(cursor.lastrowid)
+            return cursor.lastrowid
+        except Error as e:
+            print(f"Error: {e}")
+            self.connection.rollback()
+        finally:
+            cursor.close()
 
 # # Example usage:
 # if __name__ == "__main__":
 #     client = DatabaseClient(database='lawgateV2', user='root', password='Test123!')
-#     print("Clients:", clients)
+    
     
 #     # Fetch all results
 #     clients = client.fetch_all("SELECT * FROM Clients")
-    
-    
+#     query = "INSERT INTO Clients (client_name, client_email, client_phone) VALUES (%s, %s, %s)"
+#     params = ("test", "blah@gmail.com", "4047175785")
+#     result = client.insert(query, params)
+#     print(result)
+
+
+#     clients = client.fetch_all("SELECT * FROM Clients")
+
+
 #     client.disconnect()
 #     # Fetch all clients
     
