@@ -1,19 +1,26 @@
 import mysql.connector
 from mysql.connector import Error
 
-
 class DatabaseClient:
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super(DatabaseClient, cls).__new__(cls)
+        return cls._instance
+
     def __init__(self, host='127.0.0.1', database='lawgateV2', user='root', password='Test123!'):
-        self.host = host
-        self.database = database
-        self.user = user
-        self.password = password
-        self.connection = None
-        self.connect()
+        if not hasattr(self, 'initialized'):
+            self.host = host
+            self.database = database
+            self.user = user
+            self.password = password
+            self.connection = None
+            self.connect()
+            self.initialized = True
 
     def connect(self):
         print(self.host, self.database, self.user, self.password)
-
         try:
             self.connection = mysql.connector.connect(
                 host=self.host,
@@ -25,7 +32,6 @@ class DatabaseClient:
                 print("Connected to MySQL database")
         except Error as e:
             print(f"Error: {e}")
-            self.connection = None
 
     def disconnect(self):
         if self.connection.is_connected():
@@ -61,13 +67,31 @@ class DatabaseClient:
             cursor.execute(query, params)
             self.connection.commit()
             print("Insert successful")
-            print(cursor.lastrowid)
             return cursor.lastrowid
+        except Error as e:
+            print(f"Error: {e}")
+            self.connection.rollback()
+            return None
+        finally:
+            cursor.close()
+
+    def update(self, query, params):
+        if self.connection is None:
+            print("Not connected to the database")
+            return None
+        cursor = self.connection.cursor()
+        try:
+            cursor.execute(query, params)
+            self.connection.commit()
+            return cursor.rowcount
         except Error as e:
             print(f"Error: {e}")
             self.connection.rollback()
         finally:
             cursor.close()
+
+    def delete(self, query, params):
+        self.update(query, params)
 
 # # Example usage:
 # if __name__ == "__main__":

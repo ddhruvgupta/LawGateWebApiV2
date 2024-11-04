@@ -1,96 +1,151 @@
-'''Client controller is responsible for adding new clients, updating client information, 
-deleting clients and getting client information'''
-
 import uuid
-import os
-from flask import Blueprint, request, jsonify
-from clients.databaseClient import DatabaseClient
+from clients.DatabaseClient import DatabaseClient
 from clients.AzureBlobStorageClient import AzureBlobStorageClient
-from models.clientModel import ClientModel, Client
-import re
-from dotenv import load_dotenv
+from models.clientModel import Client
+from helpers.ClientDataValidator import ClientDataValidator
 
-load_dotenv()  # Load environment variables from .env file
-client_blueprint = Blueprint('client_blueprint', __name__)
 
-# Initialize database and storage clients
-cm = ClientModel(DatabaseClient())
-blob_connection_string = os.getenv("BLOB_CONNECTION_STRING")
-blob_client = AzureBlobStorageClient(blob_connection_string)
+class ClientController:
+    def __init__(self):
+        self.database = DatabaseWrapper()
+        self.blob_client = AzureBlobStorageClient()
+        self.validator = ClientDataValidator()
 
-@client_blueprint.route('/clients', methods=['POST'])
-def create_client():
-    #TODO validate data
-    print(request.json)
-    blob_container_name = str(uuid.uuid4())
+    def create_client(self, request):
+        blob_container_name = str(uuid.uuid4())
 
-    isContainerCreated = blob_client.create_container(blob_container_name)
-    if isContainerCreated:
-        client = Client()
-        client.populate(request.json)
-        client.blob_storage_container_name = blob_container_name
+        isContainerCreated = self.blob_client.create_container(blob_container_name)
+        if isContainerCreated:
+            client = Client()
+            client.populate(request)
+            client.blob_storage_container_name = blob_container_name
+            try:
+                data = self.database.create_client(client)
+            except Exception as e:
+                self.blob_client.delete_container(blob_container_name)
+                return None
+        return data
+
+    def get_client(self, client_id):
+        return self.database.read_client(client_id)
+        
+    def get_all_clients(self):
+        return self.database.fetch_all_clients()
+
+    def update_client(self, client_id, data):
+        self.validator.validate_client_data(data)
+        if self.get_client(client_id):
+            return self.database.update_client(client_id, data)
+        return False
+    
+    def delete_client(self, client_id):
+        '''removed the database entry and the related blob storage container'''
+        if self.get_client(client_id):
+            try:
+                self.blob_client.delete_container(client_id)
+                return self.database.delete_client(client_id)
+            except Exception as e:
+                return e
+        return False
+
+
+class DatabaseWrapper:
+    def __init__(self):
+        self.db_client = DatabaseClient()
+
+    def create_client(self, client: Client):
+        query = """
+        INSERT INTO Clients (client_name, client_email, client_phone, blob_storage_container_name)
+        VALUES (%s, %s, %s, %s)
+        """
+        print("params recieved:",client)
+        params = (client.client_name, client.client_email, client.client_phone, client.blob_storage_container_name)
         try:
-            data = cm.create_client(client)
+            client_id = self.db_client.insert(query, params)
+            return client_id
         except Exception as e:
-            blob_client.delete_container(blob_container_name)
-            return jsonify({'Error': "Unable to add Client"}), 501
+            print(f"Error: {e}")
+            return e
 
+    def read_client(self, client_id):
+        query = "SELECT * FROM Clients WHERE client_id = %s"
+        params = (client_id,)
+        try:
+            return self.db_client.fetch_filtered(query, params)
+        except Exception as e:
+            print(f"Error: {e}")
+            return e
+
+    def update_client(self, client: Client):
+        query = "UPDATE Clients SET "
+        params = []
+        if client.client_name:
+            query += "client_name = %s, "
+            params.append(client.client_name)
+        if client.client_email:
+            query += "client_email = %s, "
+            params.append(client.client_email)
+        if client.client_phone:
+            query += "client_phone = %s, "
+            params.append(client.client_phone)
+        if client.blob_storage_container_name:
+            query += "blob_storage_container_name = %s, "
+            params.append(client.blob_storage_container_name)
+        query = query.rstrip(', ')  # Remove trailing comma
+        query += " WHERE client_id = %s"
+        params.append(client.client_id)
+        try:
+            rows_updated = self.db_client.update(query, tuple(params))
+            if rows_updated == 1:
+                return True
+            else:
+                return False
+        except Exception as e:
+            print(f"Error: {e}")
+            return e
+
+    def delete_client(self, client_id):
+        query = "DELETE FROM Clients WHERE client_id = %s"
+        params = (client_id,)
+        try:
+            self.db_client.delete(query, params)
+        except Exception as e:
+            print(f"Error: {e}")
+            return e
+
+    def find_client_by_name(self, client_name):
+        query = "SELECT * FROM Clients WHERE client_name = %s"
+        params = (client_name,)
+        try:
+            return self.db_client.fetch_filtered(query, params)
+        except Exception as e:
+            print(f"Error: {e}")
+            return e
+
+    def fetch_all_clients(self):
+        query = "SELECT * FROM Clients"
+        try:
+            return self.db_client.fetch_all(query)
+        except Exception as e:
+            print(f"Error: {e}")
+            return e
+
+# Example usage
+# if __name__ == "__main__": 
+#     db_client = DatabaseClient(database='lawgateV2', user='root', password='Test123!')
+#     client_model = ClientModel(db_client)
     
-    return jsonify({'client_id': data}), 201
+#     # Create a new client
+#     new_client = Client(client_name='John Doe', client_email='john.doe@example.com', client_phone='1234567890', blob_storage_container_name='container_name')
+#     client_model.create_client(new_client)
 
-@client_blueprint.route('/clients/<int:client_id>', methods=['GET'])
-def get_client(client_id):
-    client = cm.read_client(client_id)
-    if client:
-        return jsonify(client), 200
-    else:
-        return jsonify({'error': 'Client not found'}), 404
-    
-@client_blueprint.route('/clients/', methods=['GET'])
-def get_all_client():
-    client = cm.fetch_all_clients()
-    if client:
-        return jsonify(client), 200
-    else:
-        return jsonify({'error': 'Client not found'}), 404
+#     # Read a client
+#     client = client_model.read_client(1)
+#     print("Client:", client)
 
-@client_blueprint.route('/clients/<int:client_id>', methods=['PUT'])
-def update_client(client_id):
-    data = request.json
-    #TODO validate data
-    if get_client(client_id):
-        _ = cm.update_client(client_id, data)
-        # TODO check if the client is updated
-        return jsonify({'message': 'Client updated'}), 200
-    else: 
-        return jsonify({'error': 'Client not found'}), 404
+#     # Update a client
+#     updated_client = Client(client_id=1, client_name='Jane Doe')
+#     client_model.update_client(updated_client)
 
-
-@client_blueprint.route('/clients/<int:client_id>', methods=['DELETE'])
-def delete_client(client_id):
-    #TODO check if client exists
-    if not get_client(client_id): 
-        return jsonify({'error': 'Client not found'}), 404
-    
-    deleted = cm.delete_client(client_id)
-    if deleted:
-        blob_client.delete_container(client_id)
-        return jsonify({'message': 'Client deleted'}), 200
-    
-
-def validate_client_data(data):
-    #TODO validate data
-    required_fields = ['client_name', 'client_email', 'client_phone']
-    for field in required_fields:
-        if field not in data:
-            return False, f"Missing required field: {field}"
-
-    email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
-    if not re.match(email_regex, data['client_email']):
-        return False, "Invalid email address"
-    
-    phone_regex = r'^(?:(?:\+|0{0,2})91(\s*[\-]\s*)?|[0]?)?[6-9]\d{9}$'
-    if not re.match(phone_regex, data['client_phone']):
-        return False, "Invalid phone number"
-    
-    return True
+#     # Delete a client
+#     client_model.delete_client(1)

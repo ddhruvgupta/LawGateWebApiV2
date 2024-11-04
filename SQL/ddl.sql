@@ -16,8 +16,9 @@ CREATE TABLE contracts (
     contract_id INT AUTO_INCREMENT PRIMARY KEY,
     contract_name VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    client_id INT FOREIGN KEY REFERENCES Clients(client_id), 
-    s3_document_link VARCHAR(255)
+    client_id INT FOREIGN KEY REFERENCES Clients(client_id),
+    document_name VARCHAR(255), 
+    document_link VARCHAR(255)
 );
 
 
