@@ -1,5 +1,4 @@
 from datetime import datetime
-from clients.databaseClient import DatabaseClient
 
 class Client:
     def __init__(self, client_id=None, client_name=None, client_email=None, client_phone=None, blob_storage_container_name=None, created_at=None):
@@ -10,9 +9,8 @@ class Client:
         self.blob_storage_container_name = blob_storage_container_name
         self.created_at = created_at or datetime.utcnow()
     
-    def populate(self, obj):
-        if obj.get('client_id'):
-            self.client_id = obj['client_id']
+    def populate(self, obj, client_id):
+        self.client_id = client_id
         if obj.get('client_name'):
             self.client_name = obj['client_name']
         if obj.get('client_email'):

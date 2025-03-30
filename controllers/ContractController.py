@@ -1,60 +1,50 @@
-from clients.AzureBlobStorageClient import AzureBlobStorageClient
-from clients.DatabaseClient import DatabaseClient
+from flask import Blueprint, request, jsonify
+from controllers.ContractController import ContractController
 from controllers.ClientController import ClientController
-from models.contractModel import Contract
-import uuid
 
-class ContractController: 
-    def __init__(self):
-        self.blob_client = AzureBlobStorageClient()
-        self.db_client = DatabaseClient()
-        self.contract = Contract()
-        self.client_controller = ClientController()
+contract_controller = Blueprint('contract_blueprint', __name__)
+contract_controller = ContractController()
+client_controller = ClientController()
 
-    def create_contract(self, contract_data, file):
-        query = """
-        INSERT INTO contracts (contract_name, client_id)
-        VALUES (%s, %s, %s)
-        """
-        
-        params = (contract_data.contract_name, contract_data.client_id)
-        return self.db_client.insert(query, params)
+@contract_controller.route('/contracts', methods=['GET'])
+def get_contracts():
+    return jsonify(contract_controller.get_contracts())
 
-    def get_contract_by_id(self, contract_id):
-        query = "SELECT * FROM contracts WHERE contract_id = %s"
-        params = (contract_id,)
-        return self.db_client.fetch_filtered(query, params)
+@contract_controller.route('/contracts/<int:contract_id>', methods=['GET'])
+def get_contract(contract_id):
+    return jsonify(contract_controller.get_contracts(contract_id))
 
-    def get_all_contracts(self):
-        query = "SELECT * FROM contracts"
-        return self.db_client.fetch_all(query)
+@contract_controller.route('/contracts', methods=['POST'])
+def create_contract():
+    client_id = request.json.get('client_id')
+    # validate client_id
+    client = client_controller.get_client(client_id)
 
-    def update_contract(self, contract_id, contract_name=None, client_id=None, contract_document_link=None):
-        updates = []
-        params = []
+    # upload contract file
+    file = request.files['file']
+    filename =  "contracts/"+file.filename
+    contract_controller.upload_contract_file(file, filename)
 
-        if contract_name:
-            updates.append("contract_name = %s")
-            params.append(contract_name)
-        if client_id:
-            updates.append("client_id = %s")
-            params.append(client_id)
-        if contract_document_link:
-            updates.append("document_link = %s")
-            params.append(contract_document_link)
+    contract_name = request.json.get('contract_name')
+    contract_document_link = request.json.get('contract_document_link')
 
-        params.append(contract_id)
-        query = f"UPDATE contracts SET {', '.join(updates)} WHERE contract_id = %s"
-        return self.db_client.insert(query, params)
+    contract_id = contract_controller.create_contract(request.json)
+    return jsonify({'id': contract_id}), 201
 
-    def delete_contract(self, contract_id):
-        query = "DELETE FROM contracts WHERE contract_id = %s"
-        params = (contract_id,)
-        return self.db_client.insert(query, params)
-    
-    def upload_contract_file(self, container_name, file):
-        blob_name = "contracts/"+ str(uuid.uuid4())
+@contract_controller.route('/contracts/<int:contract_id>', methods=['PUT'])
+def update_contract(contract_id):
+    contract_controller.update_contract(contract_id, request.json)
+    return jsonify({'message': 'Contract updated successfully'})
 
-        return self.blob_client.upload_file(file,blob_name, container_name)
+@contract_controller.route('/contracts/<int:contract_id>', methods=['DELETE'])
+def delete_contract(contract_id):
+    contract_controller.delete_contract(contract_id)
+    return jsonify({'message': 'Contract deleted successfully'})
 
-
+@contract_controller.route('/contracts/upload', methods=['POST'])
+def upload_contract_file():
+    file = request.files['file']
+    if file:
+        blob_url = contract_controller.upload_contract_file(file)
+        return jsonify({'url': blob_url}), 201
+    return jsonify({'message': 'No file attched'}), 400
