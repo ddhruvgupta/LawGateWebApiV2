@@ -1,0 +1,9 @@
+py -3 -m venv .venv
+.venv\Scripts\activate
+
+pip install Flask
+set FLASK_ENV=development
+set FLASK_APP=helloWorld.py
+pip install mysql-connector-python
+pip install azure-storage-blob
+
