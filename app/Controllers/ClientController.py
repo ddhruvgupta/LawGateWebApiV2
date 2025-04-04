@@ -35,7 +35,7 @@ def update(client_id):
         updated = client_service.update_client(db, client_id, data)
         if not updated:
             abort(404, "Client not found")
-        return jsonify({"Status": "Client updated"}), 204
+        return jsonify({"Status": "Client updated"}), 200
 
 @client_bp.route("/<int:client_id>", methods=["DELETE"])
 def delete(client_id):
