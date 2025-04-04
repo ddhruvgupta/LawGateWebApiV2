@@ -12,18 +12,13 @@ py -3 -m venv .venv (orginally used)
 
 Activate env
 
-```
-C:\Users\Dhruv-PC\Downloads\virtual-envs\LawGateWebApiV2\Scripts\activate
-```
+```C:\Users\Dhruv-PC\Downloads\virtual-envs\LawGateWebApiV2\Scripts\activate```
 
 Install Flask
 
-```
-pip install Flask
-```
+```pip install Flask```
 
-```
-pip freeze > requirements.txt
+```pip freeze > requirements.txt
 pip install -r requirements.txt
 ```
 
@@ -42,21 +37,21 @@ TODO: Can we rename the virtual environment to something other than venv ?
 
 docker compose --env-file .env.dev up --build
 
-## Troubleshooting database container
+## Troubleshooting database container ##
 
 1. Login to container:
 `docker exec -it <container_id_or_name> bash`
 or use sh instead of bash
 
 2. Login to mysql
-mysql -u root -p
+`mysql -u root -p`
 
 password is in the .env file.
 
-2. Test DB connection
+3.Test DB connection
 SHOW DATABASES;
 
-3. Check permissions for DB_USER:
+4.Check permissions for DB_USER:
 
 USE mysql;
 SELECT User, Host, authentication_string FROM user;
