@@ -12,6 +12,8 @@ services:
       - mysql_data:/var/lib/mysql
     networks:
       - app-network
+    ports: 
+      - "3306:3306"
 
   flask:
     build: .
