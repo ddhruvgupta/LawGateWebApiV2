@@ -1,8 +1,8 @@
 from sqlalchemy.orm import relationship
 from sqlalchemy import Column, Integer, String, DateTime
 from datetime import datetime, timezone
-from db.base import Base
-from models.contract_model import Contract
+from app.db.base import Base
+from app.models.contract_model import Contract #used in relationship
 
 class Client(Base):
     __tablename__ = "clients"

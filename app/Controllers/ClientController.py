@@ -1,7 +1,7 @@
 from flask import Blueprint, abort, request, jsonify
-from schemas.client_schema import ClientCreate, ClientUpdate, ClientResponse
-from services import client_service
-from db.session import get_db
+from app.schemas.client_schema import ClientCreate, ClientUpdate, ClientResponse
+from app.services import client_service
+from app.db.session import get_db
 from contextlib import contextmanager
 
 client_bp = Blueprint("clients", __name__, url_prefix="/clients")
