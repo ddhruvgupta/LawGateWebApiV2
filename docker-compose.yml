@@ -12,12 +12,17 @@ services:
       - mysql_data:/var/lib/mysql
     networks:
       - app-network
+    ports: 
+      - "3306:3306"
 
   flask:
     build: .
     environment:
+      - FLASK_APP=app:create_app
       - FLASK_ENV=${FLASK_ENV}
       - DATABASE_URL=${DATABASE_URL}
+      - DB_HOST=db
+      - DB_PORT=3306
     depends_on:
       - db
     networks:

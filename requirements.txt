@@ -28,3 +28,4 @@ sqlalchemy_utils==0.37.8
 pydantic[email]
 pymysql
 icecream
+Flask-Migrate==4.0.5

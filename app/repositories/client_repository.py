@@ -1,4 +1,4 @@
-from models.client_model import Client
+from app.models.client_model import Client
 from sqlalchemy.orm import Session
 
 def create_client(db: Session, client_data: dict) -> Client:

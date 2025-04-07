@@ -1,7 +1,7 @@
-from repositories import client_repository
+from app.repositories import client_repository
 from sqlalchemy.orm import Session
-from schemas.client_schema import ClientCreate, ClientUpdate
-from models.client_model import Client
+from app.schemas.client_schema import ClientCreate, ClientUpdate
+from app.models.client_model import Client
 
 def create_client(db: Session, data: ClientCreate) -> Client:
     return client_repository.create_client(db, data.model_dump())
