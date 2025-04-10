@@ -55,3 +55,13 @@ SHOW DATABASES;
 
 USE mysql;
 SELECT User, Host, authentication_string FROM user;
+
+## Flask Migrate Instructions
+
+flask db migrate -m "Initial migration"
+flask db upgrade
+
+# makefile commands
+
+make ENV_FILE=.env.prod up
+make ENV_FILE=.env.prod docker-upgrade
