@@ -16,3 +16,5 @@ class Client(Base):
 
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     contracts = relationship("Contract", back_populates="client", cascade="all, delete")
+
+

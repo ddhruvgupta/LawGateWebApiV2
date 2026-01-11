@@ -1,56 +1,76 @@
-from flask import Blueprint, abort, request, jsonify
+from flask_smorest import Blueprint
+from flask import abort, jsonify
 from app.schemas.client_schema import ClientCreate, ClientUpdate, ClientResponse
-from app.services import client_service
-from app.db.session import get_db
-from contextlib import contextmanager
+from app.services.client_service import ClientService
 
-client_bp = Blueprint("clients", __name__, url_prefix="/clients")
+class ClientController:
+    def __init__(self, client_service: ClientService):
+        self.client_service = client_service
+        self.blueprint = Blueprint("clients", "clients", url_prefix="/clients", description="Operations on clients")
+        self._register_routes()
 
-@client_bp.route("/", methods=["POST"])
-def create():
-    with db_session() as db:
-        data = ClientCreate(**request.json)
-        client = client_service.create_client(db, data)
-        
+    def _register_routes(self):
+        # Dynamically apply decorators
+        self.blueprint.route("/", methods=["POST"])(
+            self.blueprint.arguments(ClientCreate)(self.create)
+        )
+        self.blueprint.route("/", methods=["GET"])(self.get_all)
+        self.blueprint.route("/<int:client_id>", methods=["GET"])(self.get)
+        self.blueprint.route("/<int:client_id>", methods=["PUT"])(
+            self.blueprint.arguments(ClientUpdate)(self.update)
+        )
+        self.blueprint.route("/<int:client_id>", methods=["DELETE"])(self.delete)
+
+    def create(self, data):
+        """
+        Create a new client.
+        """
+        client = self.client_service.create_client(data)
         return jsonify(ClientResponse.model_validate(client).model_dump()), 201
 
-@client_bp.route("/", methods=["GET"])
-def get_all():
-    with db_session() as db:
-        clients = client_service.get_clients(db)
+    def get_all(self):
+        """
+        Retrieve all clients.
+        """
+        clients = self.client_service.get_all_clients()
         return jsonify([ClientResponse.model_validate(c).model_dump() for c in clients]), 200
 
-@client_bp.route("/<int:client_id>", methods=["GET"])
-def get(client_id):
-    with db_session() as db:
-        client = client_service.get_client(db, client_id)
+    def get(self, client_id):
+        """
+        Retrieve a client by their ID.
+        """
+        client = self.client_service.get_client(client_id)
         if client:
             return ClientResponse.model_validate(client).model_dump_json(), 200
         abort(404, "Client not found")
 
-@client_bp.route("/<int:client_id>", methods=["PUT"])
-def update(client_id):
-    with db_session() as db:
-        data = ClientUpdate(**request.json)
-        updated = client_service.update_client(db, client_id, data)
+    def update(self, data, client_id):
+        """
+        Update a client's information by their ID.
+        """
+        updated = self.client_service.update_client(client_id, data)
         if not updated:
             abort(404, "Client not found")
         return jsonify({"Status": "Client updated"}), 200
 
-@client_bp.route("/<int:client_id>", methods=["DELETE"])
-def delete(client_id):
-    with db_session() as db:
-        client = client_service.get_client(db, client_id)
-        if not client:
-            abort(404, "Client not found")
-        if client_service.delete_client(db, client):
+    def delete(self, client_id):
+        """
+        Delete a client by their ID.
+        """
+        deleted = self.client_service.delete_client(client_id)
+        if deleted:
             return "", 204
-        abort(501, "Error deleting client")
+        abort(404, "Client not found")
 
-@contextmanager
-def db_session():
-    db = next(get_db())
-    try:
-        yield db
-    finally:
-        db.close()
+    @staticmethod
+    def create_controller():
+        """
+        Factory method to create and configure the ClientController.
+        """
+        client_service = ClientService()  # Instantiate the service
+        return ClientController(client_service)
+
+
+# Create a singleton instance and export the blueprint
+_controller = ClientController.create_controller()
+client_bp = _controller.blueprint

@@ -1,28 +1,30 @@
-from app.repositories import client_repository
-from sqlalchemy.orm import Session
+from app.repositories.client_repository import ClientRepository
 from app.schemas.client_schema import ClientCreate, ClientUpdate
-from app.models.client_model import Client
 
-def create_client(db: Session, data: ClientCreate) -> Client:
-    return client_repository.create_client(db, data.model_dump())
+class ClientService:
+    def __init__(self):
+        self.client_repository = ClientRepository()
 
-def get_clients(db: Session) -> list[Client]:
-    return client_repository.get_all_clients(db)
+    def create_client(self, data: ClientCreate):
+        return self.client_repository.create(data.dict())
 
-def get_client(db: Session, client_id: int) -> Client | None:
-    return client_repository.get_client_by_id(db, client_id)
+    def get_all_clients(self):
+        return self.client_repository.get_all()
 
-def update_client(db: Session, client_id: int, data: ClientUpdate) -> Client | None:
-    client = get_client(db, client_id)
-    if not client:
-        return None
-    return client_repository.update_client(db, client, data.dict(exclude_unset=True))
+    def get_client(self, client_id: int):
+        return self.client_repository.get_by_id(client_id)
 
-def delete_client(db: Session, client_id: int) -> bool:
-    client = get_client(db, client_id)
-    if not client:
-        return False
-    client_repository.delete_client(db, client)
-    return True
+    def update_client(self, client_id: int, data: ClientUpdate):
+        client = self.client_repository.get_by_id(client_id)
+        if not client:
+            return None
+        return self.client_repository.update(client, data.dict(exclude_unset=True))
+
+    def delete_client(self, client_id: int):
+        client = self.client_repository.get_by_id(client_id)
+        if not client:
+            return False
+        self.client_repository.delete(client)
+        return True
 
 

@@ -1,26 +1,30 @@
 from app.models.client_model import Client
-from sqlalchemy.orm import Session
+from app.db.session import get_db
 
-def create_client(db: Session, client_data: dict) -> Client:
-    client = Client(**client_data)
-    db.add(client)
-    db.commit()
-    db.refresh(client)
-    return client
+class ClientRepository:
+    def __init__(self):
+        self.db = next(get_db())
 
-def get_all_clients(db: Session) -> list[Client]:
-    return db.query(Client).all()
+    def create(self, data: dict):
+        client = Client(**data)
+        self.db.add(client)
+        self.db.commit()
+        self.db.refresh(client)
+        return client
 
-def get_client_by_id(db: Session, client_id: int) -> Client | None:
-    return db.query(Client).filter(Client.client_id == client_id).first()
+    def get_all(self):
+        return self.db.query(Client).all()
 
-def update_client(db: Session, client: Client, update_data: dict) -> Client:
-    for key, value in update_data.items():
-        setattr(client, key, value)
-    db.commit()
-    db.refresh(client)
-    return client
+    def get_by_id(self, client_id: int):
+        return self.db.query(Client).filter(Client.id == client_id).first()
 
-def delete_client(db: Session, client: Client):
-    db.delete(client)
-    db.commit()
+    def update(self, client, data: dict):
+        for key, value in data.items():
+            setattr(client, key, value)
+        self.db.commit()
+        self.db.refresh(client)
+        return client
+
+    def delete(self, client):
+        self.db.delete(client)
+        self.db.commit()

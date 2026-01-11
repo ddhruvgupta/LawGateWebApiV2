@@ -29,3 +29,4 @@ pydantic[email]
 pymysql
 icecream
 Flask-Migrate==4.0.5
+flask_smorest
